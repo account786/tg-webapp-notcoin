@@ -194,7 +194,7 @@
 
             <div class="card">
                 <h3 style="margin-bottom: 10px; font-size: 18px;"><i class="fas fa-users" style="color: #3b82f6;"></i> Invite Friends</h3>
-                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Get 5 NOT COIN when a friend joins using your link.</p>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Get 5 NOT COIN + 10% daily commission from your friends' earnings.</p>
                 
                 <div style="background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.3);">
                     <div style="font-size: 12px; color: var(--text-muted);">Total Earned from Referrals</div>
@@ -257,7 +257,6 @@
                     </select>
                 </div>
                 
-                <!-- 🟢 Dynamic English Warning For Withdrawal Fee -->
                 <div id="feeWarningText" style="font-size: 12px; color: #10b981; margin-top: -5px; margin-bottom: 15px; font-weight: 500;">
                     <i class="fas fa-check-circle"></i> 0% Fee (No transaction fee applied).
                 </div>
@@ -323,7 +322,7 @@
         window.addEventListener('DOMContentLoaded', checkSecurity);
 
         // ===============================================
-        // 🔥 FIREBASE SETUP (For Balance, Referral & Withdraw)
+        // 🔥 FIREBASE SETUP
         // ===============================================
         const firebaseConfig = {
             apiKey: "AIzaSyCHlmUqAXSVKRm7LbutYKouae0qQkDcufA",
@@ -337,7 +336,7 @@
         const db = firebase.firestore();
 
         // ===============================================
-        // 🗄️ INDEXED DB SETUP (ONLY FOR LOCAL HISTORY TO SAVE FIREBASE COST)
+        // 🗄️ INDEXED DB SETUP
         // ===============================================
         const dbNameLocal = "NotCoinLocalHistoryDB";
         let localDB;
@@ -353,7 +352,6 @@
             };
         }
 
-        // 🟢 UPDATED LIMITS (20 Ads = 80 Not Coin)
         const TOTAL_ADS = 20; 
         const TOTAL_REWARD_DAY = 80;
         const MIN_WITHDRAW = 1000;
@@ -395,46 +393,64 @@
         }
 
         function initApp() {
-            initLocalDB(); // Init Local Storage for History
+            initLocalDB(); 
             
             const userRef = db.collection('users').doc(USER_ID);
             userRef.get().then((doc) => {
                 let today = new Date().toDateString();
+                
                 if (!doc.exists) {
-                    currentUser = { uid: USER_ID, balance: 0, ads_watched: 0, task_date: today, bonus_claim_time: 0, rewards_array: generateRewards(), referral_earnings: 0 };
+                    currentUser = { 
+                        uid: USER_ID, 
+                        balance: 0, 
+                        ads_watched: 0, 
+                        task_date: today, 
+                        bonus_claim_time: 0, 
+                        rewards_array: generateRewards(), 
+                        referral_earnings: 0 
+                    };
+                    
+                    // 🚀 Fix: Save referred_by and give 5 Coins to referrer when user signs up
+                    if(START_PARAM && START_PARAM !== USER_ID) {
+                        currentUser.referred_by = START_PARAM;
+                        processReferralReward(START_PARAM, 5); // Initial 5 Coin Reward
+                    }
                     userRef.set(currentUser); 
-                    if(START_PARAM && START_PARAM !== USER_ID) processReferralReward(START_PARAM);
                 } else {
                     currentUser = doc.data();
                     if(currentUser.bonus_claim_time === undefined) currentUser.bonus_claim_time = 0;
                     if(currentUser.referral_earnings === undefined) currentUser.referral_earnings = 0;
+                    
                     if(currentUser.task_date !== today) {
-                        currentUser.ads_watched = 0; currentUser.task_date = today; currentUser.rewards_array = generateRewards();
+                        currentUser.ads_watched = 0; 
+                        currentUser.task_date = today; 
+                        currentUser.rewards_array = generateRewards();
                         userRef.set(currentUser); 
                     }
+                    
+                    // 🚀 Fallback if a user joined by link but refer didn't process
                     if(START_PARAM && START_PARAM !== USER_ID && !currentUser.referred_by) {
                         currentUser.referred_by = START_PARAM;
                         userRef.set(currentUser);
-                        processReferralReward(START_PARAM);
+                        processReferralReward(START_PARAM, 5);
                     }
                 }
                 updateUI();
                 startBonusTimer();
             }).catch((error) => {
                 console.error("Firebase Error:", error);
-                currentUser = { uid: USER_ID, balance: 0, ads_watched: 0, task_date: new Date().toDateString(), bonus_claim_time: 0, rewards_array: generateRewards(), referral_earnings: 0 };
-                updateUI();
             });
         }
 
-        function processReferralReward(referrerUid) {
+        // 🚀 Fix: Updated processReferralReward to accept dynamically calculated amounts (5 for signup, 10% for ads)
+        function processReferralReward(referrerUid, rewardAmount) {
             const refUserDoc = db.collection('users').doc(referrerUid);
             db.runTransaction(transaction => {
                 return transaction.get(refUserDoc).then(rDoc => {
                     if(rDoc.exists) {
                         let rUser = rDoc.data();
-                        let newBal = (rUser.balance || 0) + 5;
-                        let newRefEarn = (rUser.referral_earnings || 0) + 5;
+                        let newBal = (rUser.balance || 0) + rewardAmount;
+                        let newRefEarn = (rUser.referral_earnings || 0) + rewardAmount;
                         transaction.update(refUserDoc, { balance: newBal, referral_earnings: newRefEarn });
                     }
                 });
@@ -471,10 +487,11 @@
         }
 
         function updateUI() {
-            document.getElementById('balance').innerText = currentUser.balance.toLocaleString();
+            // Updated so float decimal numbers show properly (up to 2 decimals)
+            document.getElementById('balance').innerText = Number(currentUser.balance).toLocaleString('en-US', {maximumFractionDigits: 2});
             document.getElementById('adProgressText').innerText = `${currentUser.ads_watched} / ${TOTAL_ADS}`;
             document.getElementById('adProgressBar').style.width = `${(currentUser.ads_watched / TOTAL_ADS) * 100}%`;
-            document.getElementById('refEarningsText').innerText = (currentUser.referral_earnings || 0).toLocaleString();
+            document.getElementById('refEarningsText').innerText = Number(currentUser.referral_earnings || 0).toLocaleString('en-US', {maximumFractionDigits: 2});
 
             let watchBtn = document.getElementById('watchAdBtn');
             if(currentUser.ads_watched >= TOTAL_ADS) {
@@ -511,6 +528,14 @@
             
             db.collection('users').doc(USER_ID).set(currentUser).then(() => {
                 updateUI();
+
+                // 🚀 Fix: Send 10% daily commission to the referrer automatically on every earn
+                if (currentUser.referred_by && amount > 0 && type !== 'withdraw') {
+                    let commissionAmount = amount * 0.10; // 10% calculating
+                    if(commissionAmount > 0) {
+                        processReferralReward(currentUser.referred_by, commissionAmount);
+                    }
+                }
             });
             
             let tx = localDB.transaction("history", "readwrite");
@@ -545,7 +570,7 @@
                                 <div class="list-details"><h4>${item.title}</h4><p>${item.time}</p></div>
                             </div>
                             <div class="${isMinus ? "list-reward negative" : "list-reward"}">
-                                ${isMinus ? "" : "+"} ${item.amount}
+                                ${isMinus ? "" : "+"} ${Number(item.amount).toLocaleString('en-US', {maximumFractionDigits: 2})}
                                 <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/28850.png" class="notcoin-icon" style="width:14px; height:14px; margin-left:3px;">
                             </div>
                         </div>`;
@@ -664,9 +689,6 @@
             tx.oncomplete = () => { renderHistory(); };
         }
 
-        // ===============================================
-        // 🚀 NEW: UPDATED REFERRAL COPY & SHARE FUNCTION
-        // ===============================================
         function fallbackCopy(text) {
             let textArea = document.createElement("textarea");
             textArea.value = text;
@@ -686,7 +708,6 @@
         function copyReferral() {
             let refLink = `https://t.me/not_coin_rewards_bot?start=${USER_ID}`;
             
-            // Clipboard API with fallback for Telegram WebApp compatibility
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(refLink).then(() => {
                     showToast("Referral Link Copied! Share to earn 5 NOT COIN.");
