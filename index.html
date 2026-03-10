@@ -205,6 +205,7 @@
                 </div>
 
                 <button class="btn btn-secondary" onclick="copyReferral()"><i class="fas fa-copy"></i> Copy Referral Link</button>
+                <button class="btn btn-primary" onclick="shareReferral()" style="margin-top: 10px;"><i class="fas fa-share-alt"></i> Share with Friends</button>
             </div>
 
             <div class="ad-card">
@@ -411,6 +412,11 @@
                         currentUser.ads_watched = 0; currentUser.task_date = today; currentUser.rewards_array = generateRewards();
                         userRef.set(currentUser); 
                     }
+                    if(START_PARAM && START_PARAM !== USER_ID && !currentUser.referred_by) {
+                        currentUser.referred_by = START_PARAM;
+                        userRef.set(currentUser);
+                        processReferralReward(START_PARAM);
+                    }
                 }
                 updateUI();
                 startBonusTimer();
@@ -615,7 +621,6 @@
 
         function resetAdState() { isAdRunning = false; activeTaskType = ""; updateUI(); }
 
-        // 🟢 NEW: Update UI text dynamically to inform users about the withdrawal fee
         function updateFeeWarning() {
             let method = document.getElementById('withdrawMethod').value;
             let warningEl = document.getElementById('feeWarningText');
@@ -639,7 +644,6 @@
 
             currentUser.balance -= amount;
             
-            // Send to Firebase
             const batch = db.batch();
             batch.set(db.collection('users').doc(USER_ID), currentUser);
             const withdrawRef = db.collection('withdrawals').doc();
@@ -652,7 +656,6 @@
                 updateUI(); 
             });
 
-            // Save history locally to save cost
             let tx = localDB.transaction("history", "readwrite");
             tx.objectStore("history").add({ 
                 title: `Withdraw (${method})`, amount: -amount, icon: "fa-money-bill-transfer", type: "withdraw", 
@@ -661,10 +664,48 @@
             tx.oncomplete = () => { renderHistory(); };
         }
 
+        // ===============================================
+        // 🚀 NEW: UPDATED REFERRAL COPY & SHARE FUNCTION
+        // ===============================================
+        function fallbackCopy(text) {
+            let textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast("Referral Link Copied! Share to earn 5 NOT COIN.");
+            } catch (err) {
+                showToast("Failed to copy link!", "rgba(239, 68, 68, 0.95)");
+            }
+            document.body.removeChild(textArea);
+        }
+
         function copyReferral() {
-            let refLink = `https://t.me/YourBotName?start=${USER_ID}`;
-            navigator.clipboard.writeText(refLink);
-            showToast("Referral Link Copied! Share to earn 5 NOT COIN.");
+            let refLink = `https://t.me/not_coin_rewards_bot?start=${USER_ID}`;
+            
+            // Clipboard API with fallback for Telegram WebApp compatibility
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(refLink).then(() => {
+                    showToast("Referral Link Copied! Share to earn 5 NOT COIN.");
+                }).catch(err => fallbackCopy(refLink));
+            } else {
+                fallbackCopy(refLink);
+            }
+        }
+
+        function shareReferral() {
+            let refLink = `https://t.me/not_coin_rewards_bot?start=${USER_ID}`;
+            let shareText = `Join Not Coin Reward App and earn free NOT COIN!`;
+            let shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`;
+            
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                window.Telegram.WebApp.openTelegramLink(shareUrl);
+            } else {
+                window.open(shareUrl, '_blank');
+            }
         }
 
         initApp();
