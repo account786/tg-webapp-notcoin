@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Not Coin Reward App</title>
+    
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Firebase SDK (Version 8) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+        :root {
+            --primary: #f5a623; --primary-dark: #d48a1b;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(255, 255, 255, 0.05); --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff; --text-muted: #94a3b8;
+            --success: #10b981; --danger: #ef4444; --warning: #f5a623;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; padding-bottom: 80px; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        .container { max-width: 500px; margin: auto; padding: 20px; }
+
+        .card { background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--card-border); border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); }
+        .balance-card { text-align: center; background: linear-gradient(145deg, rgba(245,166,35,0.1), rgba(0,0,0,0.2)); border: 1px solid rgba(245,166,35,0.2); }
+        .balance-title { font-size: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+        .balance-amount { font-size: 48px; margin: 10px 0; font-weight: 800; color: var(--text-main); text-shadow: 0 0 15px rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
+        .notcoin-icon { width: 22px; height: 22px; vertical-align: middle; border-radius: 50%; }
+        .balance-amount .notcoin-icon { width: 45px; height: 45px; }
+
+        .btn { width: 100%; padding: 15px; border-radius: 15px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background: linear-gradient(90deg, #f5a623, #ff7e5f); color: white; box-shadow: 0 5px 15px rgba(245,166,35,0.3); }
+        .btn-primary:active { transform: scale(0.95); }
+        .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.1); }
+
+        .progress-header { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; font-weight: 500; }
+        .progress-wrap { background: rgba(255,255,255,0.05); height: 14px; border-radius: 20px; overflow: hidden; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); }
+        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #f5a623, #ff7e5f); border-radius: 20px; transition: width 0.4s ease; }
+
+        .ad-card { background: rgba(0, 0, 0, 0.2); border: 1px dashed rgba(245, 166, 35, 0.3); text-align: center; border-radius: 15px; padding: 10px; margin-bottom: 16px; overflow-x: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .ad-card .ad-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 13px; margin-bottom: 8px; color: var(--text-muted); font-weight: 500; }
+        .input-control { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.25); color: white; font-size: 14px; outline: none; transition: 0.3s; }
+        .input-control:focus { border-color: var(--primary); background: rgba(0,0,0,0.4); }
+        select.input-control option { background: #1e1b4b; color: white; padding: 10px; }
+
+        .scroll-list { max-height: 400px; overflow-y: auto; padding-right: 5px; }
+        .scroll-list::-webkit-scrollbar { width: 5px; }
+        .scroll-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        
+        .list-item { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 15px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        .list-icon { width: 40px; height: 40px; background: rgba(255,255,255,0.1); color: var(--text-main); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .list-details h4 { font-size: 14px; margin-bottom: 2px; }
+        .list-details p { font-size: 12px; color: var(--text-muted); }
+        .list-reward { font-weight: 700; color: var(--success); display: flex; align-items: center; gap: 5px;}
+        .list-reward.negative { color: var(--danger); }
+
+        .navbar { position: fixed; bottom: 0; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); display: flex; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); padding: 15px 0 20px 0; z-index: 100; border-radius: 30px 30px 0 0; }
+        .nav { flex: 1; text-align: center; font-size: 12px; cursor: pointer; color: var(--text-muted); transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 5px; font-weight: 500; }
+        .nav i { font-size: 22px; transition: 0.3s; }
+        .nav.active { color: var(--primary); }
+        .nav.active i { transform: translateY(-5px); filter: drop-shadow(0 0 5px rgba(245,166,35,0.5)); }
+
+        .page { display: none; animation: fadeUp 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(16, 185, 129, 0.9); color: white; padding: 12px 25px; border-radius: 50px; font-weight: 600; font-size: 14px; z-index: 99999; display: none; backdrop-filter: blur(10px); box-shadow: 0 5px 20px rgba(0,0,0,0.3); text-align: center; width: max-content; max-width: 90%; }
+
+        #adViewerOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.3s ease; text-align: center; padding: 20px;}
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .ad-timer-big { font-size: 60px; font-weight: 800; color: var(--primary); margin: 20px 0; }
+        .ad-overlay-text { font-size: 18px; color: white; margin-bottom: 10px; font-weight: 500; }
+        .ad-overlay-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 10px; }
+        .ad-warning-text { font-size: 12px; color: var(--danger); font-weight: 600; margin-bottom: 30px; background: rgba(239, 68, 68, 0.1); padding: 8px 15px; border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .ad-close-btn { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 10px 30px; border-radius: 30px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;}
+
+        /* Security Overlay */
+        #securityBlock { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 9999999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; }
+    </style>
+</head>
+
+<body>
+
+    <div id="securityBlock">
+        <i class="fas fa-shield-virus" style="font-size: 60px; color: #ef4444; margin-bottom: 20px;"></i>
+        <h2 style="color: #ef4444; margin-bottom: 10px;">Access Denied</h2>
+        <p id="securityMsg" style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">We have detected unusual network activity.</p>
+        <button class="btn btn-primary" style="max-width: 200px;" onclick="window.location.reload()">Refresh Page</button>
+    </div>
+
+    <div id="toast"><i class="fas fa-info-circle"></i> <span id="toastMsg">Success</span></div>
+
+    <div id="adViewerOverlay">
+        <i class="fas fa-external-link-alt" style="font-size: 50px; color: var(--primary); margin-bottom: 20px;"></i>
+        <div class="ad-overlay-text">Advertisement opened in a new window!</div>
+        <div class="ad-overlay-sub">Please stay here and wait for the timer to finish.</div>
+        
+        <div class="ad-warning-text">
+            <i class="fas fa-exclamation-triangle"></i> Warning: If you go back before 15 seconds, NOT COIN will not be added to your account.
+        </div>
+        
+        <div class="ad-timer-big" id="adTimerCount">15</div>
+        <button class="ad-close-btn" onclick="closeAdEarly()"><i class="fas fa-times"></i> Cancel Task</button>
+    </div>
+
+    <div class="container">
+        <!-- ================= HOME PAGE ================= -->
+        <div id="home" class="page active">
+            <div class="ad-card">
+                <span class="ad-label">Sponsored</span>
+                <script>atOptions = {'key' : '3133e6f82f5691b24dc4b9f367ed8ab0','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
+                <script src="https://www.highperformanceformat.com/3133e6f82f5691b24dc4b9f367ed8ab0/invoke.js"></script>
+            </div>
+
+            <div class="card balance-card">
+                <div class="balance-title">NOT COIN Balance</div>
+                <div class="balance-amount">
+                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/28850.png" class="notcoin-icon" alt="NOT COIN">
+                    <span id="balance">0</span>
+                </div>
+                <button class="btn btn-primary" onclick="openPage('earn', document.querySelectorAll('.nav')[1])">
+                    <i class="fas fa-play"></i> Start Earning
+                </button>
+                <p style="font-size: 11px; color: #fca5a5; margin-top: 12px; font-weight: 500; text-align: center;">
+                    <i class="fas fa-exclamation-circle"></i> Warning: If you go back before 15 seconds, NOT COIN will not be added to your account.
+                </p>
+            </div>
+
+            <div class="ad-card">
+                <span class="ad-label">Sponsored</span>
+                <script>atOptions = {'key' : 'db4bc868d59bcc0f2a246aeba88d9042','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
+                <script src="https://www.highperformanceformat.com/db4bc868d59bcc0f2a246aeba88d9042/invoke.js"></script>
+            </div>
+
+            <!-- 🌟 DAILY BONUS CARD -->
+            <div class="card">
+                <h3 style="margin-bottom: 10px; font-size: 18px;">
+                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/28850.png" style="width: 20px; vertical-align: middle;"> Daily Bonus
+                </h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Claim random NOT COIN every 24 hours.</p>
+                <button id="bonusBtn" class="btn btn-secondary" onclick="claimBonus()">Claim Now</button>
+                <p style="font-size: 11px; color: #fca5a5; margin-top: 12px; font-weight: 500; text-align: center;">
+                    <i class="fas fa-exclamation-circle"></i> Warning: If you go back before 15 seconds, NOT COIN will not be added.
+                </p>
+            </div>
+
+            <div class="ad-card">
+                <span class="ad-label">Sponsored</span>
+                <script>atOptions = {'key' : '85dc5000b91ad022af02984ae9d36de7','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
+                <script src="https://www.highperformanceformat.com/85dc5000b91ad022af02984ae9d36de7/invoke.js"></script>
+            </div>
+        </div>
+
+        <!-- ================= EARN PAGE ================= -->
+        <div id="earn" class="page">
+            <div class="ad-card">
+                <span class="ad-label">Sponsored</span>
+                <script>atOptions = {'key' : '3133e6f82f5691b24dc4b9f367ed8ab0','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
+                <script src="https://www.highperformanceformat.com/3133e6f82f5691b24dc4b9f367ed8ab0/invoke.js"></script>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 5px; font-size: 18px;"><i class="fas fa-video" style="color: var(--primary);"></i> Watch Ads Task</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Watch 25 ads daily to earn exactly 100 NOT COIN.</p>
+                
+                <div class="progress-header"><span>Ads Watched</span><span id="adProgressText" style="color: var(--primary);">0 / 25</span></div>
+                <div class="progress-wrap"><div id="adProgressBar" class="progress-fill"></div></div>
+                
+                <button id="watchAdBtn" class="btn btn-primary" onclick="openAdTask()"><i class="fas fa-play-circle"></i> Watch Ad Now</button>
+
+                <p style="font-size: 11px; color: #fca5a5; margin-top: 12px; font-weight: 500; text-align: center;">
+                    <i class="fas fa-exclamation-circle"></i> Warning: If you go back before 15 seconds, NOT COIN will not be added to your account.
+                </p>
+            </div>
+
+            <div class="ad-card">
+                <span class="ad-label">Sponsored</span>
+                <script>atOptions = {'key' : 'db4bc868d59bcc0f2a246aeba88d9042','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
+                <script src="https://www.highperformanceformat.com/db4bc868d59bcc0f2a246aeba88d9042/invoke.js"></script>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 10px; font-size: 18px;"><i class="fas fa-users" style="color: #3b82f6;"></i> Invite Friends</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Get 5 NOT COIN when a friend joins using your link.</p>
+                
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <div style="font-size: 12px; color: var(--text-muted);">Total Earned from Referrals</div>
+                    <div style="font-size: 18px; font-weight: 700; color: var(--success); display: flex; align-items: center; gap: 5px;">
+                        <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/28850.png" class="notcoin-icon" style="width: 20px;"> 
+                        <span id="refEarningsText">0</span> NOT COIN
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary" onclick="copyReferral()"><i class="fas fa-copy"></i> Copy Referral Link</button>
+            </div>
+
+            <div class="ad-card">
+                <span class="ad-label">Sponsored</span>
+                <script>atOptions = {'key' : '85dc5000b91ad022af02984ae9d36de7','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
+                <script src="https://www.highperformanceformat.com/85dc5000b91ad022af02984ae9d36de7/invoke.js"></script>
+            </div>
+        </div>
+
+        <!-- ================= HISTORY PAGE ================= -->
+        <div id="history" class="page">
+            <div class="ad-card">
+                <span class="ad-label">Sponsored</span>
+                <script>atOptions = {'key' : '3133e6f82f5691b24dc4b9f367ed8ab0','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
+                <script src="https://www.highperformanceformat.com/3133e6f82f5691b24dc4b9f367ed8ab0/invoke.js"></script>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 18px;"><i class="fas fa-history"></i> Transaction History <span style="font-size:10px; color:var(--success);">(Offline Saving)</span></h3>
+                <div id="historyList" class="scroll-list"></div>
+            </div>
+
+            <div class="ad-card">
+                <span class="ad-label">Sponsored</span>
+                <script>atOptions = {'key' : 'db4bc868d59bcc0f2a246aeba88d9042','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
+                <script src="https://www.highperformanceformat.com/db4bc868d59bcc0f2a246aeba88d9042/invoke.js"></script>
+            </div>
+        </div>
+
+        <!-- ================= WITHDRAW PAGE ================= -->
+        <div id="withdraw" class="page">
+            <div class="ad-card">
+                <span class="ad-label">Sponsored</span>
+                <script>atOptions = {'key' : '3133e6f82f5691b24dc4b9f367ed8ab0','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
+                <script src="https://www.highperformanceformat.com/3133e6f82f5691b24dc4b9f367ed8ab0/invoke.js"></script>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 10px; font-size: 18px;"><i class="fas fa-money-bill-transfer" style="color: #10b981;"></i> Withdraw NOT COIN</h3>
+                <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; color: #fca5a5; line-height: 1.5;">
+                    <i class="fas fa-info-circle"></i> Minimum withdrawal amount is <b>1000 NOT COIN</b>. Payments are processed within 24 hours.
+                </div>
+                
+                <div class="input-group">
+                    <label>Select Payment Method</label>
+                    <select id="withdrawMethod" class="input-control">
+                        <option value="Binance ID">Binance ID</option>
+                        <option value="BCS (BEP20)">BCS (BEP20)</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>Account Number / Address</label>
+                    <input id="withdrawAddress" class="input-control" type="text" placeholder="Enter your Wallet Address or ID">
+                </div>
+                
+                <div class="input-group">
+                    <label>Amount (NOT COIN)</label>
+                    <input id="withdrawAmount" class="input-control" type="number" placeholder="Minimum 1000">
+                </div>
+                
+                <button id="withdrawBtn" class="btn btn-primary" onclick="processWithdraw()" style="margin-top: 20px;">
+                    <i class="fas fa-paper-plane"></i> Submit Request
+                </button>
+            </div>
+
+            <div class="ad-card">
+                <span class="ad-label">Sponsored</span>
+                <script>atOptions = {'key' : 'db4bc868d59bcc0f2a246aeba88d9042','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
+                <script src="https://www.highperformanceformat.com/db4bc868d59bcc0f2a246aeba88d9042/invoke.js"></script>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVBAR -->
+    <div class="navbar">
+        <div class="nav active" onclick="openPage('home', this)"><i class="fas fa-home"></i> Home</div>
+        <div class="nav" onclick="openPage('earn', this)"><i class="fas fa-play-circle"></i> Earn</div>
+        <div class="nav" onclick="openPage('history', this)"><i class="fas fa-list-alt"></i> History</div>
+        <div class="nav" onclick="openPage('withdraw', this)"><i class="fas fa-wallet"></i> Withdraw</div>
+    </div>
+
+    <script>
+        // ===============================================
+        // 🔒 SECURITY SYSTEM
+        // ===============================================
+        function triggerSecurityBlock(message) {
+            document.getElementById('securityBlock').style.display = 'flex';
+            document.getElementById('securityMsg').innerText = message;
+        }
+
+        async function checkSecurity() {
+            let adbTest = document.createElement('div');
+            adbTest.innerHTML = '&nbsp;';
+            adbTest.className = 'adsbox'; 
+            document.body.appendChild(adbTest);
+            setTimeout(() => {
+                if (adbTest.offsetHeight === 0) { triggerSecurityBlock("Adblocker Detected! Please turn off your Adblocker to use this app."); }
+                adbTest.remove();
+            }, 500);
+
+            try {
+                let res = await fetch('https://ipwho.is/');
+                let data = await res.json();
+                if (data.security && (data.security.vpn || data.security.proxy || data.security.tor)) {
+                    triggerSecurityBlock("VPN or Proxy Detected! Please disconnect your VPN to use this app.");
+                }
+            } catch (error) { console.warn("Tracker blocker on."); }
+        }
+        window.addEventListener('DOMContentLoaded', checkSecurity);
+
+        // ===============================================
+        // 🔥 FIREBASE SETUP (For Balance, Referral & Withdraw)
+        // ===============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCHlmUqAXSVKRm7LbutYKouae0qQkDcufA",
+            authDomain: "earning-telegram.firebaseapp.com",
+            projectId: "earning-telegram",
+            storageBucket: "earning-telegram.firebasestorage.app",
+            messagingSenderId: "585828248138",
+            appId: "1:585828248138:android:29c60681040f4b269a94b3"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ===============================================
+        // 🗄️ INDEXED DB SETUP (ONLY FOR LOCAL HISTORY TO SAVE FIREBASE COST)
+        // ===============================================
+        const dbNameLocal = "NotCoinLocalHistoryDB";
+        let localDB;
+        function initLocalDB() {
+            let request = indexedDB.open(dbNameLocal, 1);
+            request.onupgradeneeded = (e) => {
+                let idb = e.target.result;
+                if(!idb.objectStoreNames.contains('history')) idb.createObjectStore('history', {keyPath: 'id', autoIncrement: true});
+            };
+            request.onsuccess = (e) => {
+                localDB = e.target.result;
+                renderHistory();
+            };
+        }
+
+        const TOTAL_ADS = 25; 
+        const TOTAL_REWARD_DAY = 100;
+        const MIN_WITHDRAW = 1000;
+        const AD_TIME_SECONDS = 15; 
+        
+        const AD_LINKS =[
+            "https://www.effectivegatecpm.com/kyi071pib?key=f97ab34f903ea845e2d6e024b4eb4802", "https://www.effectivegatecpm.com/h5i0v8cj?key=b84cdb24e61ca63ce399c60aed1494cb",
+            "https://www.effectivegatecpm.com/j5801bm8ra?key=0434dc1a443644cfa9bea67db8fed92f", "https://www.effectivegatecpm.com/w4pfsi9wj?key=b1c2d91a66df19212575e70a95e0c71b",
+            "https://www.effectivegatecpm.com/jdnz9mt9kb?key=c3c7829a7545af5bf949089518774889", "https://www.effectivegatecpm.com/hb8na21vz?key=4bd433cc342e69199df1fb700a6ba999",
+            "https://www.effectivegatecpm.com/k9xkfgxrqi?key=39308c0bdedefcb10a3368cc72797894", "https://www.effectivegatecpm.com/ban6uh9gy?key=c3d322b30e1e375fdd807eda48a13caa",
+            "https://www.effectivegatecpm.com/kia6ntn5?key=34708c8678795457ba3a280f508e5b08", "https://www.effectivegatecpm.com/t93gmtqt9d?key=ce93562702e4420b6fb5bbe3a2837f67",
+            "https://www.effectivegatecpm.com/mrba7a4jbn?key=d39d14ff072dff0231856bf4990aeb2f", "https://www.effectivegatecpm.com/xdkrdz8w?key=fab87a1485d3669dd5a928e7d6276d0e",
+            "https://www.effectivegatecpm.com/ux9ryxvy?key=a5af903ef9c66b5f98992672c8e106f7", "https://www.effectivegatecpm.com/k7jpaetm?key=cc5b62121dbb1ecd7f39fb1c7ab9c1ef",
+            "https://www.effectivegatecpm.com/t6gxem45?key=01b5ea05f9992dfb2d73b35ff8a6066d", "https://www.effectivegatecpm.com/z5e91wcmg?key=e8c547de81fd1b675499397ba5a33e5b",
+            "https://www.effectivegatecpm.com/rnij3ey3?key=b3f17c6ea620efa3b404ed56c036fcac", "https://www.effectivegatecpm.com/bmq78u03?key=89faf07c005584a51105a6b958e53efb",
+            "https://www.effectivegatecpm.com/d0jbudjyu0?key=d67abd9cc8e20ed55437f604e2784332", "https://www.effectivegatecpm.com/fri1dnia?key=2fedf5fe0ab00da2213895ea9f5c4837",
+            "https://www.effectivegatecpm.com/cg57h25rsv?key=ca9d525cef698a8cc419ae5e30cf6ac3", "https://www.effectivegatecpm.com/x4fphhqvus?key=4285f91bccc2f411e69adbd7a26bb515",
+            "https://www.effectivegatecpm.com/xpr9pukppq?key=b56b39d77c89daac0b182b78d8a2f400", "https://www.effectivegatecpm.com/f6x9ct89sc?key=c0163db3a26b1ffb952e0e985dc66753",
+            "https://www.effectivegatecpm.com/qt5st7c29h?key=bdd5559eb481d66b02282f7d1f02f02d"
+        ];
+        
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        const USER_ID = tg.initDataUnsafe?.user?.id?.toString() || "123456789"; 
+        const START_PARAM = tg.initDataUnsafe?.start_param || null;
+
+        let currentUser = null;
+        let bonusTimerInterval;
+
+        function generateRewards() {
+            let rewards = Array(TOTAL_ADS).fill(1);
+            let remaining = TOTAL_REWARD_DAY - TOTAL_ADS;
+            while(remaining > 0) {
+                let randomIndex = Math.floor(Math.random() * TOTAL_ADS);
+                rewards[randomIndex]++;
+                remaining--;
+            }
+            return rewards.sort(() => Math.random() - 0.5);
+        }
+
+        function initApp() {
+            initLocalDB(); // Init Local Storage for History
+            
+            const userRef = db.collection('users').doc(USER_ID);
+            userRef.get().then((doc) => {
+                let today = new Date().toDateString();
+                if (!doc.exists) {
+                    currentUser = { uid: USER_ID, balance: 0, ads_watched: 0, task_date: today, bonus_claim_time: 0, rewards_array: generateRewards(), referral_earnings: 0 };
+                    userRef.set(currentUser); 
+                    if(START_PARAM && START_PARAM !== USER_ID) processReferralReward(START_PARAM);
+                } else {
+                    currentUser = doc.data();
+                    if(currentUser.bonus_claim_time === undefined) currentUser.bonus_claim_time = 0;
+                    if(currentUser.referral_earnings === undefined) currentUser.referral_earnings = 0;
+                    if(currentUser.task_date !== today) {
+                        currentUser.ads_watched = 0; currentUser.task_date = today; currentUser.rewards_array = generateRewards();
+                        userRef.set(currentUser); 
+                    }
+                }
+                updateUI();
+                startBonusTimer();
+            }).catch((error) => {
+                console.error("Firebase Error:", error);
+                currentUser = { uid: USER_ID, balance: 0, ads_watched: 0, task_date: new Date().toDateString(), bonus_claim_time: 0, rewards_array: generateRewards(), referral_earnings: 0 };
+                updateUI();
+            });
+        }
+
+        function processReferralReward(referrerUid) {
+            const refUserDoc = db.collection('users').doc(referrerUid);
+            db.runTransaction(transaction => {
+                return transaction.get(refUserDoc).then(rDoc => {
+                    if(rDoc.exists) {
+                        let rUser = rDoc.data();
+                        let newBal = (rUser.balance || 0) + 5;
+                        let newRefEarn = (rUser.referral_earnings || 0) + 5;
+                        transaction.update(refUserDoc, { balance: newBal, referral_earnings: newRefEarn });
+                    }
+                });
+            }).catch(err => console.log("Referral processing failed:", err));
+        }
+
+        // ===============================================
+        // 🕒 DAILY BONUS 24H LIVE VISIBLE TIMER
+        // ===============================================
+        function startBonusTimer() {
+            clearInterval(bonusTimerInterval);
+            bonusTimerInterval = setInterval(() => {
+                if(!currentUser) return;
+                
+                let timeDiff = Date.now() - (currentUser.bonus_claim_time || 0);
+                let timeLeft = 86400000 - timeDiff; // 24 Hours
+                let btn = document.getElementById('bonusBtn');
+
+                if(timeLeft > 0) {
+                    btn.disabled = true;
+                    // 🟢 Made it fully visible with orange warning color
+                    btn.style.opacity = '1';
+                    btn.style.border = '1px solid rgba(245, 166, 35, 0.3)';
+                    
+                    let h = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+                    let m = Math.floor((timeLeft / 1000 / 60) % 60);
+                    let s = Math.floor((timeLeft / 1000) % 60);
+                    
+                    h = h < 10 ? "0" + h : h; m = m < 10 ? "0" + m : m; s = s < 10 ? "0" + s : s;
+                    
+                    // 🟢 Live Time Update in the Button
+                    btn.innerHTML = `<i class="fas fa-clock" style="color:var(--warning);"></i> <span style="color:var(--warning);">Next Bonus in ${h}h ${m}m ${s}s</span>`;
+                } else {
+                    btn.disabled = false;
+                    btn.style.border = '1px solid rgba(255,255,255,0.1)';
+                    btn.innerHTML = `Claim Now`;
+                    clearInterval(bonusTimerInterval);
+                }
+            }, 1000);
+        }
+
+        function updateUI() {
+            document.getElementById('balance').innerText = currentUser.balance.toLocaleString();
+            document.getElementById('adProgressText').innerText = `${currentUser.ads_watched} / ${TOTAL_ADS}`;
+            document.getElementById('adProgressBar').style.width = `${(currentUser.ads_watched / TOTAL_ADS) * 100}%`;
+            document.getElementById('refEarningsText').innerText = (currentUser.referral_earnings || 0).toLocaleString();
+
+            let watchBtn = document.getElementById('watchAdBtn');
+            if(currentUser.ads_watched >= TOTAL_ADS) {
+                watchBtn.innerHTML = '<i class="fas fa-check-circle"></i> Tasks Completed';
+                watchBtn.style.background = 'var(--success)';
+                watchBtn.disabled = true;
+            } else if(!isAdRunning) {
+                watchBtn.disabled = false;
+            }
+        }
+
+        function openPage(pageId, navElement) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav').forEach(n => n.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            navElement.classList.add('active');
+        }
+
+        function showToast(msg, bg = "rgba(16, 185, 129, 0.95)") {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.style.background = bg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        // ===============================================
+        // 🟢 SAVE HISTORY OFFLINE (SAVES FIREBASE COST)
+        // ===============================================
+        function addHistory(title, amount, icon, type) {
+            currentUser.balance += amount;
+            if(type === 'ad') currentUser.ads_watched++;
+            if(type === 'bonus') {
+                currentUser.bonus_claim_time = Date.now();
+                startBonusTimer(); // Restart live timer immediately
+            }
+            
+            // Send Balance update to Firebase
+            db.collection('users').doc(USER_ID).set(currentUser).then(() => {
+                updateUI();
+            });
+            
+            // Save History LOCALLY
+            let tx = localDB.transaction("history", "readwrite");
+            tx.objectStore("history").add({ 
+                title: title, amount: amount, icon: icon, type: type, 
+                time: new Date().toLocaleTimeString(), timestamp: Date.now() 
+            });
+            tx.oncomplete = () => { renderHistory(); };
+        }
+
+        function renderHistory() {
+            if(!localDB) return;
+            let tx = localDB.transaction("history", "readonly");
+            let store = tx.objectStore("history");
+            let historyData =[];
+
+            store.openCursor().onsuccess = (e) => {
+                let cursor = e.target.result;
+                if(cursor) {
+                    historyData.push(cursor.value);
+                    cursor.continue();
+                } else {
+                    historyData.sort((a, b) => b.timestamp - a.timestamp); 
+                    let html = historyData.length === 0 ? `<p style="text-align:center; color:gray; padding: 20px;">No transactions yet.</p>` : "";
+                    
+                    historyData.slice(0, 30).forEach(item => {
+                        let isMinus = item.type === "withdraw" || item.amount < 0;
+                        html += `
+                        <div class="list-item">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="list-icon" style="${isMinus ? 'color: var(--danger); background: rgba(239, 68, 68, 0.2);' : ''}"><i class="fas ${item.icon}"></i></div>
+                                <div class="list-details"><h4>${item.title}</h4><p>${item.time}</p></div>
+                            </div>
+                            <div class="${isMinus ? "list-reward negative" : "list-reward"}">
+                                ${isMinus ? "" : "+"} ${item.amount}
+                                <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/28850.png" class="notcoin-icon" style="width:14px; height:14px; margin-left:3px;">
+                            </div>
+                        </div>`;
+                    });
+                    document.getElementById('historyList').innerHTML = html;
+                }
+            };
+        }
+
+        // ===============================================
+        // 🟢 AD TASK LOGIC
+        // ===============================================
+        let adInterval; let timeLeft = 0; let currentReward = 0; let currentBonusAmount = 0;
+        let isAdRunning = false; let activeTaskType = ""; 
+
+        function claimBonus() {
+            let timeDiff = Date.now() - (currentUser.bonus_claim_time || 0);
+            if(timeDiff < 86400000) return; 
+            if(isAdRunning) return;
+
+            isAdRunning = true; activeTaskType = "bonus";
+            document.getElementById('bonusBtn').disabled = true;
+
+            let currentAdLink = AD_LINKS[Math.floor(Math.random() * AD_LINKS.length)];
+            currentBonusAmount = Math.floor(Math.random() * 5) + 5;
+
+            startAdTimer(currentAdLink);
+        }
+
+        function openAdTask() {
+            if(currentUser.ads_watched >= TOTAL_ADS) return;
+            if(isAdRunning) return; 
+            
+            isAdRunning = true; activeTaskType = "ad";
+            document.getElementById('watchAdBtn').disabled = true;
+
+            let currentAdLink = AD_LINKS[currentUser.ads_watched % AD_LINKS.length];
+            currentReward = currentUser.rewards_array[currentUser.ads_watched]; 
+            
+            startAdTimer(currentAdLink);
+        }
+
+        function startAdTimer(link) {
+            document.getElementById('adViewerOverlay').style.display = 'flex';
+            timeLeft = AD_TIME_SECONDS; 
+            document.getElementById('adTimerCount').innerText = timeLeft;
+
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+                window.Telegram.WebApp.openLink(link);
+            } else {
+                window.open(link, '_blank');
+            }
+
+            adInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('adTimerCount').innerText = timeLeft;
+                if(timeLeft <= 0) { clearInterval(adInterval); completeAdSuccess(); }
+            }, 1000);
+        }
+
+        function closeAdEarly() {
+            if(timeLeft > 0) { clearInterval(adInterval); document.getElementById('adViewerOverlay').style.display = 'none'; showToast("Task Failed! You canceled early.", "rgba(239, 68, 68, 0.95)"); resetAdState(); }
+        }
+
+        function completeAdSuccess() { 
+            document.getElementById('adViewerOverlay').style.display = 'none'; 
+            if (activeTaskType === "ad") {
+                addHistory(`Ad Task #${currentUser.ads_watched + 1}`, currentReward, "fa-video", "ad"); 
+                showToast(`Task Complete! +${currentReward} NOT COIN`); 
+            } else if (activeTaskType === "bonus") {
+                addHistory("Daily Bonus", currentBonusAmount, "fa-gift", "bonus");
+                showToast(`Awesome! Claimed ${currentBonusAmount} NOT COIN`);
+            }
+            resetAdState(); 
+        }
+
+        function resetAdState() { isAdRunning = false; activeTaskType = ""; updateUI(); }
+
+        function processWithdraw() {
+            let method = document.getElementById('withdrawMethod').value;
+            let address = document.getElementById('withdrawAddress').value;
+            let amount = parseInt(document.getElementById('withdrawAmount').value);
+            if (!address) { showToast("Please enter your Wallet Address", "rgba(239, 68, 68, 0.95)"); return; }
+            if (!amount || amount < MIN_WITHDRAW) { showToast(`Minimum withdraw is ${MIN_WITHDRAW} NOT COIN`, "rgba(239, 68, 68, 0.95)"); return; }
+            if (amount > currentUser.balance) { showToast("Insufficient Balance!", "rgba(239, 68, 68, 0.95)"); return; }
+
+            currentUser.balance -= amount;
+            
+            // Send to Firebase
+            const batch = db.batch();
+            batch.set(db.collection('users').doc(USER_ID), currentUser);
+            const withdrawRef = db.collection('withdrawals').doc();
+            batch.set(withdrawRef, { uid: USER_ID, method: method, address: address, amount: amount, status: "Pending", timestamp: Date.now() });
+            
+            batch.commit().then(() => { 
+                showToast("Withdrawal Request Submitted!"); 
+                document.getElementById('withdrawAddress').value = ""; 
+                document.getElementById('withdrawAmount').value = ""; 
+                updateUI(); 
+            });
+
+            // Save history locally to save cost
+            let tx = localDB.transaction("history", "readwrite");
+            tx.objectStore("history").add({ 
+                title: `Withdraw (${method})`, amount: -amount, icon: "fa-money-bill-transfer", type: "withdraw", 
+                time: new Date().toLocaleTimeString(), timestamp: Date.now() 
+            });
+            tx.oncomplete = () => { renderHistory(); };
+        }
+
+        function copyReferral() {
+            let refLink = `https://t.me/YourBotName?start=${USER_ID}`;
+            navigator.clipboard.writeText(refLink);
+            showToast("Referral Link Copied! Share to earn 5 NOT COIN.");
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
