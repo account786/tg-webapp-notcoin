@@ -88,7 +88,6 @@
         .ad-warning-text { font-size: 12px; color: var(--danger); font-weight: 600; margin-bottom: 30px; background: rgba(239, 68, 68, 0.1); padding: 8px 15px; border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.3); }
         .ad-close-btn { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 10px 30px; border-radius: 30px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;}
 
-        /* Security Overlay */
         #securityBlock { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 9999999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; }
     </style>
 </head>
@@ -175,9 +174,9 @@
 
             <div class="card">
                 <h3 style="margin-bottom: 5px; font-size: 18px;"><i class="fas fa-video" style="color: var(--primary);"></i> Watch Ads Task</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Watch 25 ads daily to earn exactly 100 NOT COIN.</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Watch 20 ads daily to earn exactly 80 NOT COIN.</p>
                 
-                <div class="progress-header"><span>Ads Watched</span><span id="adProgressText" style="color: var(--primary);">0 / 25</span></div>
+                <div class="progress-header"><span>Ads Watched</span><span id="adProgressText" style="color: var(--primary);">0 / 20</span></div>
                 <div class="progress-wrap"><div id="adProgressBar" class="progress-fill"></div></div>
                 
                 <button id="watchAdBtn" class="btn btn-primary" onclick="openAdTask()"><i class="fas fa-play-circle"></i> Watch Ad Now</button>
@@ -251,10 +250,15 @@
                 
                 <div class="input-group">
                     <label>Select Payment Method</label>
-                    <select id="withdrawMethod" class="input-control">
+                    <select id="withdrawMethod" class="input-control" onchange="updateFeeWarning()">
                         <option value="Binance ID">Binance ID</option>
-                        <option value="BCS (BEP20)">BCS (BEP20)</option>
+                        <option value="BEP20 Address">BEP20 Address (BSC)</option>
                     </select>
+                </div>
+                
+                <!-- 🟢 Dynamic English Warning For Withdrawal Fee -->
+                <div id="feeWarningText" style="font-size: 12px; color: #10b981; margin-top: -5px; margin-bottom: 15px; font-weight: 500;">
+                    <i class="fas fa-check-circle"></i> 0% Fee (No transaction fee applied).
                 </div>
                 
                 <div class="input-group">
@@ -348,8 +352,9 @@
             };
         }
 
-        const TOTAL_ADS = 25; 
-        const TOTAL_REWARD_DAY = 100;
+        // 🟢 UPDATED LIMITS (20 Ads = 80 Not Coin)
+        const TOTAL_ADS = 20; 
+        const TOTAL_REWARD_DAY = 80;
         const MIN_WITHDRAW = 1000;
         const AD_TIME_SECONDS = 15; 
         
@@ -430,9 +435,6 @@
             }).catch(err => console.log("Referral processing failed:", err));
         }
 
-        // ===============================================
-        // 🕒 DAILY BONUS 24H LIVE VISIBLE TIMER
-        // ===============================================
         function startBonusTimer() {
             clearInterval(bonusTimerInterval);
             bonusTimerInterval = setInterval(() => {
@@ -444,7 +446,6 @@
 
                 if(timeLeft > 0) {
                     btn.disabled = true;
-                    // 🟢 Made it fully visible with orange warning color
                     btn.style.opacity = '1';
                     btn.style.border = '1px solid rgba(245, 166, 35, 0.3)';
                     
@@ -453,8 +454,6 @@
                     let s = Math.floor((timeLeft / 1000) % 60);
                     
                     h = h < 10 ? "0" + h : h; m = m < 10 ? "0" + m : m; s = s < 10 ? "0" + s : s;
-                    
-                    // 🟢 Live Time Update in the Button
                     btn.innerHTML = `<i class="fas fa-clock" style="color:var(--warning);"></i> <span style="color:var(--warning);">Next Bonus in ${h}h ${m}m ${s}s</span>`;
                 } else {
                     btn.disabled = false;
@@ -496,23 +495,18 @@
             setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
 
-        // ===============================================
-        // 🟢 SAVE HISTORY OFFLINE (SAVES FIREBASE COST)
-        // ===============================================
         function addHistory(title, amount, icon, type) {
             currentUser.balance += amount;
             if(type === 'ad') currentUser.ads_watched++;
             if(type === 'bonus') {
                 currentUser.bonus_claim_time = Date.now();
-                startBonusTimer(); // Restart live timer immediately
+                startBonusTimer();
             }
             
-            // Send Balance update to Firebase
             db.collection('users').doc(USER_ID).set(currentUser).then(() => {
                 updateUI();
             });
             
-            // Save History LOCALLY
             let tx = localDB.transaction("history", "readwrite");
             tx.objectStore("history").add({ 
                 title: title, amount: amount, icon: icon, type: type, 
@@ -555,9 +549,6 @@
             };
         }
 
-        // ===============================================
-        // 🟢 AD TASK LOGIC
-        // ===============================================
         let adInterval; let timeLeft = 0; let currentReward = 0; let currentBonusAmount = 0;
         let isAdRunning = false; let activeTaskType = ""; 
 
@@ -623,6 +614,20 @@
         }
 
         function resetAdState() { isAdRunning = false; activeTaskType = ""; updateUI(); }
+
+        // 🟢 NEW: Update UI text dynamically to inform users about the withdrawal fee
+        function updateFeeWarning() {
+            let method = document.getElementById('withdrawMethod').value;
+            let warningEl = document.getElementById('feeWarningText');
+            
+            if(method.includes('BEP20')) {
+                warningEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 0.2% transaction fee will be applied.';
+                warningEl.style.color = '#f5a623';
+            } else {
+                warningEl.innerHTML = '<i class="fas fa-check-circle"></i> 0% Fee (No transaction fee applied).';
+                warningEl.style.color = '#10b981';
+            }
+        }
 
         function processWithdraw() {
             let method = document.getElementById('withdrawMethod').value;
