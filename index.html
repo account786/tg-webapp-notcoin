@@ -5,16 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Not Coin Reward App</title>
     
-    <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
-    <!-- Google Fonts & FontAwesome -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
-    <!-- Firebase SDK (Version 8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script src='//libtl.com/sdk.js' data-zone='10714987' data-sdk='show_10714987'></script>
 
     <style>
         :root {
@@ -117,7 +116,6 @@
     </div>
 
     <div class="container">
-        <!-- ================= HOME PAGE ================= -->
         <div id="home" class="page active">
             <div class="ad-card">
                 <span class="ad-label">Sponsored</span>
@@ -134,27 +132,14 @@
                 <button class="btn btn-primary" onclick="openPage('earn', document.querySelectorAll('.nav')[1])">
                     <i class="fas fa-play"></i> Start Earning
                 </button>
-                <p style="font-size: 11px; color: #fca5a5; margin-top: 12px; font-weight: 500; text-align: center;">
-                    <i class="fas fa-exclamation-circle"></i> Warning: If you go back before 15 seconds, NOT COIN will not be added to your account.
-                </p>
             </div>
 
-            <div class="ad-card">
-                <span class="ad-label">Sponsored</span>
-                <script>atOptions = {'key' : 'db4bc868d59bcc0f2a246aeba88d9042','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
-                <script src="https://www.highperformanceformat.com/db4bc868d59bcc0f2a246aeba88d9042/invoke.js"></script>
-            </div>
-
-            <!-- 🌟 DAILY BONUS CARD -->
             <div class="card">
                 <h3 style="margin-bottom: 10px; font-size: 18px;">
                     <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/28850.png" style="width: 20px; vertical-align: middle;"> Daily Bonus
                 </h3>
                 <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Claim random NOT COIN every 24 hours.</p>
-                <button id="bonusBtn" class="btn btn-secondary" onclick="claimBonus()">Claim Now</button>
-                <p style="font-size: 11px; color: #fca5a5; margin-top: 12px; font-weight: 500; text-align: center;">
-                    <i class="fas fa-exclamation-circle"></i> Warning: If you go back before 15 seconds, NOT COIN will not be added.
-                </p>
+                <button id="bonusBtn" class="btn btn-secondary" onclick="claimBonus()"><i class="fas fa-gift"></i> Claim Now</button>
             </div>
 
             <div class="ad-card">
@@ -164,7 +149,6 @@
             </div>
         </div>
 
-        <!-- ================= EARN PAGE ================= -->
         <div id="earn" class="page">
             <div class="ad-card">
                 <span class="ad-label">Sponsored</span>
@@ -180,10 +164,12 @@
                 <div class="progress-wrap"><div id="adProgressBar" class="progress-fill"></div></div>
                 
                 <button id="watchAdBtn" class="btn btn-primary" onclick="openAdTask()"><i class="fas fa-play-circle"></i> Watch Ad Now</button>
+            </div>
 
-                <p style="font-size: 11px; color: #fca5a5; margin-top: 12px; font-weight: 500; text-align: center;">
-                    <i class="fas fa-exclamation-circle"></i> Warning: If you go back before 15 seconds, NOT COIN will not be added to your account.
-                </p>
+            <div class="card">
+                <h3 style="margin-bottom: 10px; font-size: 18px;"><i class="fas fa-bolt" style="color: #f5a623;"></i> 10-Min Bonus Ad</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Watch a quick ad every 10 minutes to earn 2 NOT COIN.</p>
+                <button id="tenMinBonusBtn" class="btn btn-secondary" onclick="claimTenMinBonus()"><i class="fas fa-play-circle"></i> Watch & Claim</button>
             </div>
 
             <div class="ad-card">
@@ -207,15 +193,8 @@
                 <button class="btn btn-secondary" onclick="copyReferral()"><i class="fas fa-copy"></i> Copy Referral Link</button>
                 <button class="btn btn-primary" onclick="shareReferral()" style="margin-top: 10px;"><i class="fas fa-share-alt"></i> Share with Friends</button>
             </div>
-
-            <div class="ad-card">
-                <span class="ad-label">Sponsored</span>
-                <script>atOptions = {'key' : '85dc5000b91ad022af02984ae9d36de7','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
-                <script src="https://www.highperformanceformat.com/85dc5000b91ad022af02984ae9d36de7/invoke.js"></script>
-            </div>
         </div>
 
-        <!-- ================= HISTORY PAGE ================= -->
         <div id="history" class="page">
             <div class="ad-card">
                 <span class="ad-label">Sponsored</span>
@@ -227,15 +206,8 @@
                 <h3 style="margin-bottom: 15px; font-size: 18px;"><i class="fas fa-history"></i> Transaction History <span style="font-size:10px; color:var(--success);">(Offline Saving)</span></h3>
                 <div id="historyList" class="scroll-list"></div>
             </div>
-
-            <div class="ad-card">
-                <span class="ad-label">Sponsored</span>
-                <script>atOptions = {'key' : 'db4bc868d59bcc0f2a246aeba88d9042','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
-                <script src="https://www.highperformanceformat.com/db4bc868d59bcc0f2a246aeba88d9042/invoke.js"></script>
-            </div>
         </div>
 
-        <!-- ================= WITHDRAW PAGE ================= -->
         <div id="withdraw" class="page">
             <div class="ad-card">
                 <span class="ad-label">Sponsored</span>
@@ -275,16 +247,9 @@
                     <i class="fas fa-paper-plane"></i> Submit Request
                 </button>
             </div>
-
-            <div class="ad-card">
-                <span class="ad-label">Sponsored</span>
-                <script>atOptions = {'key' : 'db4bc868d59bcc0f2a246aeba88d9042','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};</script>
-                <script src="https://www.highperformanceformat.com/db4bc868d59bcc0f2a246aeba88d9042/invoke.js"></script>
-            </div>
         </div>
     </div>
 
-    <!-- BOTTOM NAVBAR -->
     <div class="navbar">
         <div class="nav active" onclick="openPage('home', this)"><i class="fas fa-home"></i> Home</div>
         <div class="nav" onclick="openPage('earn', this)"><i class="fas fa-play-circle"></i> Earn</div>
@@ -380,6 +345,7 @@
 
         let currentUser = null;
         let bonusTimerInterval;
+        let tenMinBonusInterval;
 
         function generateRewards() {
             let rewards = Array(TOTAL_ADS).fill(1);
@@ -406,19 +372,20 @@
                         ads_watched: 0, 
                         task_date: today, 
                         bonus_claim_time: 0, 
+                        ten_min_bonus_time: 0,
                         rewards_array: generateRewards(), 
                         referral_earnings: 0 
                     };
                     
-                    // 🚀 Fix: Save referred_by and give 5 Coins to referrer when user signs up
                     if(START_PARAM && START_PARAM !== USER_ID) {
                         currentUser.referred_by = START_PARAM;
-                        processReferralReward(START_PARAM, 5); // Initial 5 Coin Reward
+                        processReferralReward(START_PARAM, 5); 
                     }
                     userRef.set(currentUser); 
                 } else {
                     currentUser = doc.data();
                     if(currentUser.bonus_claim_time === undefined) currentUser.bonus_claim_time = 0;
+                    if(currentUser.ten_min_bonus_time === undefined) currentUser.ten_min_bonus_time = 0;
                     if(currentUser.referral_earnings === undefined) currentUser.referral_earnings = 0;
                     
                     if(currentUser.task_date !== today) {
@@ -428,7 +395,6 @@
                         userRef.set(currentUser); 
                     }
                     
-                    // 🚀 Fallback if a user joined by link but refer didn't process
                     if(START_PARAM && START_PARAM !== USER_ID && !currentUser.referred_by) {
                         currentUser.referred_by = START_PARAM;
                         userRef.set(currentUser);
@@ -437,12 +403,12 @@
                 }
                 updateUI();
                 startBonusTimer();
+                startTenMinBonusTimer();
             }).catch((error) => {
                 console.error("Firebase Error:", error);
             });
         }
 
-        // 🚀 Fix: Updated processReferralReward to accept dynamically calculated amounts (5 for signup, 10% for ads)
         function processReferralReward(referrerUid, rewardAmount) {
             const refUserDoc = db.collection('users').doc(referrerUid);
             db.runTransaction(transaction => {
@@ -457,6 +423,9 @@
             }).catch(err => console.log("Referral processing failed:", err));
         }
 
+        // ===============================================
+        // 🌟 Daily Bonus Timer (24 Hours)
+        // ===============================================
         function startBonusTimer() {
             clearInterval(bonusTimerInterval);
             bonusTimerInterval = setInterval(() => {
@@ -464,6 +433,7 @@
                 
                 let timeDiff = Date.now() - (currentUser.bonus_claim_time || 0);
                 let timeLeft = 86400000 - timeDiff; // 24 Hours
+
                 let btn = document.getElementById('bonusBtn');
 
                 if(timeLeft > 0) {
@@ -480,14 +450,71 @@
                 } else {
                     btn.disabled = false;
                     btn.style.border = '1px solid rgba(255,255,255,0.1)';
-                    btn.innerHTML = `Claim Now`;
+                    btn.innerHTML = `<i class="fas fa-gift"></i> Claim Now`;
                     clearInterval(bonusTimerInterval);
                 }
             }, 1000);
         }
 
+        // ===============================================
+        // 🚀 10-Minute Bonus Timer 
+        // ===============================================
+        function startTenMinBonusTimer() {
+            clearInterval(tenMinBonusInterval);
+            tenMinBonusInterval = setInterval(() => {
+                if(!currentUser) return;
+                
+                let timeDiff = Date.now() - (currentUser.ten_min_bonus_time || 0);
+                let timeLeft = 600000 - timeDiff; // 10 Minutes (600,000 ms)
+                let btn = document.getElementById('tenMinBonusBtn');
+
+                if(timeLeft > 0) {
+                    btn.disabled = true;
+                    btn.style.opacity = '1';
+                    btn.style.border = '1px solid rgba(245, 166, 35, 0.3)';
+                    
+                    let m = Math.floor((timeLeft / 1000 / 60) % 60);
+                    let s = Math.floor((timeLeft / 1000) % 60);
+                    
+                    m = m < 10 ? "0" + m : m; s = s < 10 ? "0" + s : s;
+                    btn.innerHTML = `<i class="fas fa-clock" style="color:var(--warning);"></i> <span style="color:var(--warning);">Wait ${m}m ${s}s</span>`;
+                } else {
+                    btn.disabled = false;
+                    btn.style.border = '1px solid rgba(255,255,255,0.1)';
+                    btn.innerHTML = `<i class="fas fa-play-circle"></i> Watch & Claim`;
+                    clearInterval(tenMinBonusInterval);
+                }
+            }, 1000);
+        }
+
+        // ===============================================
+        // 💰 10-Minute Ad logic and 2 Coin Reward
+        // ===============================================
+        function claimTenMinBonus() {
+            let timeDiff = Date.now() - (currentUser.ten_min_bonus_time || 0);
+            if(timeDiff < 600000) return; 
+
+            if (typeof show_10714987 === "function") {
+                show_10714987().then(() => {
+                    let rewardAmount = 2; // ২ কয়েন পুরস্কার
+                    
+                    // আপডেট ফায়ারবেস টাইম
+                    currentUser.ten_min_bonus_time = Date.now();
+                    
+                    // কয়েন যোগ এবং হিস্ট্রি সেভ
+                    addHistory("10-Min Bonus Ad", rewardAmount, "fa-bolt", "ten_min_bonus");
+                    
+                    startTenMinBonusTimer(); // টাইমার পুনরায় শুরু
+                    showToast(`Awesome! Claimed ${rewardAmount} NOT COIN`);
+                }).catch(e => {
+                    showToast("Ad failed to load or was closed.", "rgba(239, 68, 68, 0.95)");
+                });
+            } else {
+                showToast("Ad is loading. Try again in a few seconds.", "rgba(239, 68, 68, 0.95)");
+            }
+        }
+
         function updateUI() {
-            // Updated so float decimal numbers show properly (up to 2 decimals)
             document.getElementById('balance').innerText = Number(currentUser.balance).toLocaleString('en-US', {maximumFractionDigits: 2});
             document.getElementById('adProgressText').innerText = `${currentUser.ads_watched} / ${TOTAL_ADS}`;
             document.getElementById('adProgressBar').style.width = `${(currentUser.ads_watched / TOTAL_ADS) * 100}%`;
@@ -529,9 +556,8 @@
             db.collection('users').doc(USER_ID).set(currentUser).then(() => {
                 updateUI();
 
-                // 🚀 Fix: Send 10% daily commission to the referrer automatically on every earn
                 if (currentUser.referred_by && amount > 0 && type !== 'withdraw') {
-                    let commissionAmount = amount * 0.10; // 10% calculating
+                    let commissionAmount = amount * 0.10; 
                     if(commissionAmount > 0) {
                         processReferralReward(currentUser.referred_by, commissionAmount);
                     }
