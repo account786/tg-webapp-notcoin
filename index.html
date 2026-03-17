@@ -13,7 +13,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
+    <!-- Ad SDKs -->
     <script src='//libtl.com/sdk.js' data-zone='10714987' data-sdk='show_10714987'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10712237' data-sdk='show_10712237'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10701142' data-sdk='show_10701142'></script>
 
     <style>
         :root {
@@ -104,11 +107,11 @@
 
     <div id="adViewerOverlay">
         <i class="fas fa-external-link-alt" style="font-size: 50px; color: var(--primary); margin-bottom: 20px;"></i>
-        <div class="ad-overlay-text">Advertisement opened in a new window!</div>
-        <div class="ad-overlay-sub">Please stay here and wait for the timer to finish.</div>
+        <div class="ad-overlay-text">Advertisement opened in a new tab!</div>
+        <div class="ad-overlay-sub">Mini App is still running. Wait for the timer to finish.</div>
         
         <div class="ad-warning-text">
-            <i class="fas fa-exclamation-triangle"></i> Warning: If you go back before 15 seconds, NOT COIN will not be added to your account.
+            <i class="fas fa-exclamation-triangle"></i> Warning: Do not close this overlay before 15 seconds!
         </div>
         
         <div class="ad-timer-big" id="adTimerCount">15</div>
@@ -158,7 +161,7 @@
 
             <div class="card">
                 <h3 style="margin-bottom: 5px; font-size: 18px;"><i class="fas fa-video" style="color: var(--primary);"></i> Watch Ads Task</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Watch 20 ads daily to earn exactly 80 NOT COIN.</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Watch 20 ads daily to earn exactly 60 NOT COIN.</p>
                 
                 <div class="progress-header"><span>Ads Watched</span><span id="adProgressText" style="color: var(--primary);">0 / 20</span></div>
                 <div class="progress-wrap"><div id="adProgressBar" class="progress-fill"></div></div>
@@ -287,6 +290,39 @@
         window.addEventListener('DOMContentLoaded', checkSecurity);
 
         // ===============================================
+        // 🚀 Moniad Ads Initialization - Professional Staggering
+        // ===============================================
+        function initMoniadAds() {
+            try {
+                /*
+                 ১. প্রথম অ্যাডটি অ্যাপ ওপেন করার ৫ সেকেন্ড পর আসবে।
+                 এবং একবার আসার পর পুনরায় ১২০ সেকেন্ড (২ মিনিট) পর আসবে।
+                */
+                if (typeof show_10701142 === 'function') { 
+                    show_10701142({ type: 'inApp', inAppSettings: { frequency: 2, capping: 0.1, interval: 120, timeout: 5, everyPage: false } }); 
+                }
+
+                /*
+                 ২. দ্বিতীয় অ্যাডটি প্রথমটির ঠিক ৪০ সেকেন্ড পর (অর্থাৎ ৪৫ সেকেন্ডে) আসবে।
+                 এবং ১২০ সেকেন্ড পর পর রিপিট হবে, ফলে প্রথমটির সাথে ধাক্কা খাবে না।
+                */
+                if (typeof show_10712237 === 'function') { 
+                    show_10712237({ type: 'inApp', inAppSettings: { frequency: 2, capping: 0.1, interval: 120, timeout: 45, everyPage: false } }); 
+                }
+
+                /*
+                 ৩. তৃতীয় অ্যাডটি দ্বিতীয়টির ঠিক ৪০ সেকেন্ড পর (অর্থাৎ ৮৫ সেকেন্ডে) আসবে।
+                 এটিরও ইন্টারভ্যাল ১২০ সেকেন্ড হওয়ায় কোনো অ্যাডের সাথেই ওভারল্যাপ হবে না।
+                */
+                if (typeof show_10714987 === 'function') { 
+                    show_10714987({ type: 'inApp', inAppSettings: { frequency: 2, capping: 0.1, interval: 120, timeout: 85, everyPage: false } }); 
+                }
+            } catch (error) {
+                console.log("Moniad Ads could not be initialized:", error);
+            }
+        }
+
+        // ===============================================
         // 🔥 FIREBASE SETUP
         // ===============================================
         const firebaseConfig = {
@@ -318,7 +354,7 @@
         }
 
         const TOTAL_ADS = 20; 
-        const TOTAL_REWARD_DAY = 80;
+        const TOTAL_REWARD_DAY = 60; 
         const MIN_WITHDRAW = 1000;
         const AD_TIME_SECONDS = 15; 
         
@@ -348,18 +384,19 @@
         let tenMinBonusInterval;
 
         function generateRewards() {
-            let rewards = Array(TOTAL_ADS).fill(1);
-            let remaining = TOTAL_REWARD_DAY - TOTAL_ADS;
+            let rewards = Array(TOTAL_ADS).fill(1); 
+            let remaining = TOTAL_REWARD_DAY - TOTAL_ADS; 
             while(remaining > 0) {
                 let randomIndex = Math.floor(Math.random() * TOTAL_ADS);
-                rewards[randomIndex]++;
+                rewards[randomIndex]++; 
                 remaining--;
             }
-            return rewards.sort(() => Math.random() - 0.5);
+            return rewards.sort(() => Math.random() - 0.5); 
         }
 
         function initApp() {
             initLocalDB(); 
+            initMoniadAds(); 
             
             const userRef = db.collection('users').doc(USER_ID);
             userRef.get().then((doc) => {
@@ -430,10 +467,8 @@
             clearInterval(bonusTimerInterval);
             bonusTimerInterval = setInterval(() => {
                 if(!currentUser) return;
-                
                 let timeDiff = Date.now() - (currentUser.bonus_claim_time || 0);
-                let timeLeft = 86400000 - timeDiff; // 24 Hours
-
+                let timeLeft = 86400000 - timeDiff; 
                 let btn = document.getElementById('bonusBtn');
 
                 if(timeLeft > 0) {
@@ -463,9 +498,8 @@
             clearInterval(tenMinBonusInterval);
             tenMinBonusInterval = setInterval(() => {
                 if(!currentUser) return;
-                
                 let timeDiff = Date.now() - (currentUser.ten_min_bonus_time || 0);
-                let timeLeft = 600000 - timeDiff; // 10 Minutes (600,000 ms)
+                let timeLeft = 600000 - timeDiff; 
                 let btn = document.getElementById('tenMinBonusBtn');
 
                 if(timeLeft > 0) {
@@ -488,7 +522,7 @@
         }
 
         // ===============================================
-        // 💰 10-Minute Ad logic and 2 Coin Reward
+        // 💰 10-Minute Ad logic
         // ===============================================
         function claimTenMinBonus() {
             let timeDiff = Date.now() - (currentUser.ten_min_bonus_time || 0);
@@ -496,15 +530,10 @@
 
             if (typeof show_10714987 === "function") {
                 show_10714987().then(() => {
-                    let rewardAmount = 2; // ২ কয়েন পুরস্কার
-                    
-                    // আপডেট ফায়ারবেস টাইম
+                    let rewardAmount = 2; 
                     currentUser.ten_min_bonus_time = Date.now();
-                    
-                    // কয়েন যোগ এবং হিস্ট্রি সেভ
                     addHistory("10-Min Bonus Ad", rewardAmount, "fa-bolt", "ten_min_bonus");
-                    
-                    startTenMinBonusTimer(); // টাইমার পুনরায় শুরু
+                    startTenMinBonusTimer(); 
                     showToast(`Awesome! Claimed ${rewardAmount} NOT COIN`);
                 }).catch(e => {
                     showToast("Ad failed to load or was closed.", "rgba(239, 68, 68, 0.95)");
@@ -555,7 +584,6 @@
             
             db.collection('users').doc(USER_ID).set(currentUser).then(() => {
                 updateUI();
-
                 if (currentUser.referred_by && amount > 0 && type !== 'withdraw') {
                     let commissionAmount = amount * 0.10; 
                     if(commissionAmount > 0) {
@@ -606,8 +634,15 @@
             };
         }
 
-        let adInterval; let timeLeft = 0; let currentReward = 0; let currentBonusAmount = 0;
-        let isAdRunning = false; let activeTaskType = ""; 
+        // ===============================================
+        // 🎯 Background Proof Timer & Direct Tab Opening Logic
+        // ===============================================
+        let adInterval; 
+        let timeLeft = 0; 
+        let currentReward = 0; 
+        let currentBonusAmount = 0;
+        let isAdRunning = false; 
+        let activeTaskType = ""; 
 
         function claimBonus() {
             let timeDiff = Date.now() - (currentUser.bonus_claim_time || 0);
@@ -641,21 +676,47 @@
             timeLeft = AD_TIME_SECONDS; 
             document.getElementById('adTimerCount').innerText = timeLeft;
 
+            // Direct click logic: ওপেন হবে নতুন ট্যাবে, ফলে মিনি অ্যাপটি ব্যাকগ্রাউন্ডে হারাবে না
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
-                window.Telegram.WebApp.openLink(link);
+                // try_instant_view: false ব্যবহার করে নিশ্চিত করা হলো যাতে এক্সটার্নাল ব্রাউজার খোলে
+                window.Telegram.WebApp.openLink(link, { try_instant_view: false });
             } else {
-                window.open(link, '_blank');
+                let a = document.createElement('a');
+                a.href = link;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             }
 
+            // ব্যাকগ্রাউন্ডে চলতে সক্ষম Date.now() ভিত্তিক টাইমার
+            let targetEndTime = Date.now() + (AD_TIME_SECONDS * 1000);
+            
+            clearInterval(adInterval);
             adInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById('adTimerCount').innerText = timeLeft;
-                if(timeLeft <= 0) { clearInterval(adInterval); completeAdSuccess(); }
-            }, 1000);
+                let currentTime = Date.now();
+                let remaining = Math.ceil((targetEndTime - currentTime) / 1000);
+                
+                if (remaining <= 0) {
+                    clearInterval(adInterval);
+                    timeLeft = 0;
+                    document.getElementById('adTimerCount').innerText = "0";
+                    completeAdSuccess();
+                } else {
+                    timeLeft = remaining;
+                    document.getElementById('adTimerCount').innerText = remaining;
+                }
+            }, 500); // 500ms অন্তর চেক করবে, ফলে ব্রাউজার টাইমার থ্রোটল করলেও সঠিক সময় হিসাব হবে
         }
 
         function closeAdEarly() {
-            if(timeLeft > 0) { clearInterval(adInterval); document.getElementById('adViewerOverlay').style.display = 'none'; showToast("Task Failed! You canceled early.", "rgba(239, 68, 68, 0.95)"); resetAdState(); }
+            if(timeLeft > 0) { 
+                clearInterval(adInterval); 
+                document.getElementById('adViewerOverlay').style.display = 'none'; 
+                showToast("Task Failed! You canceled early.", "rgba(239, 68, 68, 0.95)"); 
+                resetAdState(); 
+            }
         }
 
         function completeAdSuccess() { 
@@ -733,7 +794,6 @@
 
         function copyReferral() {
             let refLink = `https://t.me/not_coin_rewards_bot?start=${USER_ID}`;
-            
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(refLink).then(() => {
                     showToast("Referral Link Copied! Share to earn 5 NOT COIN.");
